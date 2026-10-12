@@ -8,7 +8,13 @@ st.set_page_config(page_title="ChatBot Básico", page_icon="😎")
 st.title('ChatBot Básico con LangChain')
 st.markdown('Este es un chatbot de ejemplo construido con LangChain + StreamLit. Escribe tu mensaje abajo para comenzar!')
 
-chat_model = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
+
+with st.sidebar:
+    st.header("Configuración")
+    temperature = st.slider('Temperatura', 0.0, 1.0, 0.5,0.1)
+    model_name = st.selectbox('Modelo',["gpt-3.5-turbo",'gpt-4',"gpt-4o-mini"])
+
+chat_model = ChatOpenAI(model=model_name, temperature=0.5)
 
 
 # Inicializar el historial de mensajes
