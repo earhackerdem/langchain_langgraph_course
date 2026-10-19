@@ -62,17 +62,33 @@ if pregunta:
         #Mostrar inmediatamente el mensaje del usuario en la interfaz
     with st.chat_message("user"):
         st.markdown(pregunta)
+        
+    try:
+        with st.chat_message("assistant"):
+            response_placeholder = st.empty()
+            full_response = ""
+            
+            #Inicio del streaming
+            for chunk in chain.stream({'mensaje':pregunta,"historial":historial}):
+                full_response += chunk.content
+                response_placeholder.markdown(full_response + "▌")
+                response_placeholder.markdown(full_response)
+        
        
         # Almacenamos el mensaje en la memoria de streamlit
-    historial.append(HumanMessage(content=pregunta))
+        historial.append(HumanMessage(content=pregunta))
+        
+        historial.append(AIMessage(content=full_response))
+        
+        st.session_state.messages = historial
 
-        # Generar respuesta usando el modelo de Lenguaje
-    respuesta = chain.invoke({"mensaje":pregunta,"historial":historial})
+    
+    except Exception as e:
+        st.error(f"Error al generar la respuesta: {str(e)}")
+        st.info("Verifica que tu API KEY de OPENAI este configurada correctamente")
 
 
         # Mostrar la respuesta en la interfaz
-    with st.chat_message('assistant'):
-        st.markdown(respuesta.content)
+   
 
-    historial.append(respuesta)
 
