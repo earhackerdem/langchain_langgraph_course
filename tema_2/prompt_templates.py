@@ -8,4 +8,4 @@ prompt = PromptTemplate(
 )
 
 prompt_lleno = prompt.format(producto="cafe organico")
-print(prompt_lleno)
+print(prompt_lleno)  
