@@ -25,6 +25,7 @@ for chunk in chunks:
         break
     response = llm.invoke(f"Haz un resumen de los puntos mas importantes del siguiente texto {chunk.page_content}")
     summaries.append(response.content)
+    i += 1
 
 #2. Combinar todas las páginas en un texto
 
