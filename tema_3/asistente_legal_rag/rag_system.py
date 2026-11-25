@@ -1,3 +1,5 @@
+import os
+
 from langchain_community.vectorstores import Chroma
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
@@ -41,19 +43,19 @@ def initialize_rag_system():
     prompt = PromptTemplate.from_template(RAG_TEMPLATE)
 
     # Funcion para formatear y preprocesar los documentos recuperados
-    def format_docs():
+    def format_docs(docs):
         formatted = []
 
         for i, doc in enumerate(docs, 1):
             header = f"[Fragmento {i}]"
             if doc.metadata:
                 if "source" in doc.metadata:
-                    source = doc.metadata["source"].split("\\")[-1] if doc.metadata['source'] else doc.metadata['source']
+                    source = os.path.basename(doc.metadata["source"]) if doc.metadata["source"] else doc.metadata["source"]
                     header += f"- Fuente: {source}"
                 if 'page' in doc.metadata:
                     header += f" - Pagina: {doc.metadata['page']}"
             content = doc.page_content.strip()
-            formatted.append(f"{'header'}\n{content}")
+            formatted.append(f"{header}\n{content}")
         
         return "\n\n".join(formatted)
             
