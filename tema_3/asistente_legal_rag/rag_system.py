@@ -7,6 +7,7 @@ from langchain_classic.retrievers.multi_query import MultiQueryRetriever
 import streamlit as st
 
 from config import *
+from prompts import *
 
 def initialize_rag_system():
     
@@ -30,3 +31,16 @@ def initialize_rag_system():
             "fetch_k": MMR_FETCH_K
         }
     )
+    
+    #Prompt personalizado para el MultiqueryRetriever
+    multi_query_prompt = PromptTemplate.from_template(MULTI_QUERY_PROMPT)
+
+    # MultiqueryRetriever con prompt personalizado
+
+    mmr_multi_retriever = MultiQueryRetriever.from_llm(
+        retriever=base_retriever,
+        llm=llm_queries,
+        prompt=multi_query_prompt
+    )
+
+    prompt = PromptTemplate.from_template(RAG_TEMPLATE)
