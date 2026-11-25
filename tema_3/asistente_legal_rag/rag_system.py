@@ -11,7 +11,7 @@ import streamlit as st
 from config import *
 from prompts import *
 
-
+@st.cache_resource
 def initialize_rag_system():
 
     ## Vector Store
@@ -70,3 +70,26 @@ def initialize_rag_system():
     )
 
     return rag_chain, mmr_multi_retriever
+
+def query_rag(question):
+    try:
+        rag_chain, retriever = initialize_rag_system()
+        #obtener respuesta
+        response = rag_chain.invoke(question)
+        #obtener documentos para mostrarlos 
+        docs = retriever._get_relevant_documents(question)
+        #Formatear los documentos para mostrar
+        docs_info = []
+        for i, doc in enumerate(docs[:SEARCH_K],1):
+            doc_info = {
+                "fragmento": i,
+                "contenido": doc.page_content[:1000] + "..." if len(doc.page_content) > 1000 else doc.page_content,
+                "fuente": doc.metadata.get('source','No especificada').split('\\')[-1],
+                "pagina": doc.metadata.get('page','No especificada')
+            }
+            docs_info.append(doc_info)
+            
+        return response,docs_info
+    except Exception as e:
+        error_msg = f"Error al procesar la consulta: {str(e)}"
+        return error_msg,[]
