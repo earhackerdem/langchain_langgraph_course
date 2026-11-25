@@ -9,50 +9,62 @@ import streamlit as st
 from config import *
 from prompts import *
 
+
 def initialize_rag_system():
-    
+
     ## Vector Store
     vector_store = Chroma(
         embedding_function=OpenAIEmbeddings(model=EMBEDDING_MODEL),
-        persist_directory=CHROMA_DB_PATH
+        persist_directory=CHROMA_DB_PATH,
     )
-    
+
     # Modelos
-    
-    llm_queries = ChatOpenAI(model=QUERY_MODEL,temperature=0)
-    llm_generation = ChatOpenAI(model=GENERATION_MODEL,temperature=0)
-    
+
+    llm_queries = ChatOpenAI(model=QUERY_MODEL, temperature=0)
+    llm_generation = ChatOpenAI(model=GENERATION_MODEL, temperature=0)
+
     # Retriever MMR(Maximal Margin Relevance)
-    
+
     base_retriever = vector_store.as_retriever(
-        search_type = SEARCH_TYPE,
-        search_kwargs = {
-            "k": SEARCH_K,
-            "fetch_k": MMR_FETCH_K
-        }
+        search_type=SEARCH_TYPE, search_kwargs={"k": SEARCH_K, "fetch_k": MMR_FETCH_K}
     )
-    
-    #Prompt personalizado para el MultiqueryRetriever
+
+    # Prompt personalizado para el MultiqueryRetriever
     multi_query_prompt = PromptTemplate.from_template(MULTI_QUERY_PROMPT)
 
     # MultiqueryRetriever con prompt personalizado
 
     mmr_multi_retriever = MultiQueryRetriever.from_llm(
-        retriever=base_retriever,
-        llm=llm_queries,
-        prompt=multi_query_prompt
+        retriever=base_retriever, llm=llm_queries, prompt=multi_query_prompt
     )
 
     prompt = PromptTemplate.from_template(RAG_TEMPLATE)
-    
-    rag_chain(
+
+    # Funcion para formatear y preprocesar los documentos recuperados
+    def format_docs():
+        formatted = []
+
+        for i, doc in enumerate(docs, 1):
+            header = f"[Fragmento {i}]"
+            if doc.metadata:
+                if "source" in doc.metadata:
+                    source = doc.metadata["source"].split("\\")[-1] if doc.metadata['source'] else doc.metadata['source']
+                    header += f"- Fuente: {source}"
+                if 'page' in doc.metadata:
+                    header += f" - Pagina: {doc.metadata['page']}"
+            content = doc.page_content.strip()
+            formatted.append(f"{'header'}\n{content}")
+        
+        return "\n\n".join(formatted)
+            
+
+    rag_chain = (
         {
-            "context":mmr_multi_retriever,
-            "question": RunnablePassthrough()
-        }
+            "context": mmr_multi_retriever | format_docs,
+            "question": RunnablePassthrough()}
         | prompt
-        | llm_generation 
+        | llm_generation
         | StrOutputParser()
     )
-    
+
     return rag_chain, mmr_multi_retriever
