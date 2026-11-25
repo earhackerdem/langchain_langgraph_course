@@ -44,3 +44,15 @@ def initialize_rag_system():
     )
 
     prompt = PromptTemplate.from_template(RAG_TEMPLATE)
+    
+    rag_chain(
+        {
+            "context":mmr_multi_retriever,
+            "question": RunnablePassthrough()
+        }
+        | prompt
+        | llm_generation 
+        | StrOutputParser()
+    )
+    
+    return rag_chain, mmr_multi_retriever
