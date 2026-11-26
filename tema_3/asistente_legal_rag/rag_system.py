@@ -8,15 +8,17 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_classic.retrievers.multi_query import MultiQueryRetriever
 import streamlit as st
 
+from langchain_classic.retrievers import EnsembleRetriever
 from config import *
 from prompts import *
 
 def get_retriever_info():
     return {
-        "tipo": SEARCH_TYPE.upper(),   # "MMR"
-        "k": SEARCH_K,
-        "fetch_k": MMR_FETCH_K,
-        "lambda_mult": MMR_DIVERSITY_LAMBDA,
+        "tipo": f"{SEARCH_TYPE.upper()} + Multiquery" + ("+Hybrid" if ENABLE_HYBRID_SEARCH else ""),   # "MMR"
+        "documentos": SEARCH_K,
+        'diversidad': MMR_DIVERSITY_LAMBDA,
+        "candidatos": MMR_FETCH_K,
+        "umbral": SIMILARITY_THRESHOLD if ENABLE_HYBRID_SEARCH else "N/A"
     }
 
 @st.cache_resource
@@ -38,6 +40,12 @@ def initialize_rag_system():
     base_retriever = vector_store.as_retriever(
         search_type=SEARCH_TYPE, search_kwargs={"k": SEARCH_K, "fetch_k": MMR_FETCH_K}
     )
+    
+    # Retriever adicional con similarity para comparar
+    similarity_retriever = vector_store.as_retriever(
+        search_type="similarity",
+        search_kwargs = {"k":SEARCH_K}
+    )
 
     # Prompt personalizado para el MultiqueryRetriever
     multi_query_prompt = PromptTemplate.from_template(MULTI_QUERY_PROMPT)
@@ -47,7 +55,17 @@ def initialize_rag_system():
     mmr_multi_retriever = MultiQueryRetriever.from_llm(
         retriever=base_retriever, llm=llm_queries, prompt=multi_query_prompt
     )
-
+    
+    #Emsemble Retriever que combina MMR y similarity
+    if ENABLE_HYBRID_SEARCH:
+        ensemble_retriever = EnsembleRetriever(
+            retrievers=[mmr_multi_retriever,similarity_retriever],
+            weights = [0.7,0.3], #mayor peso a MMR
+        )
+        final_retriever = ensemble_retriever
+    else:
+        final_retriever = mmr_multi_retriever
+        
     prompt = PromptTemplate.from_template(RAG_TEMPLATE)
 
     # Funcion para formatear y preprocesar los documentos recuperados
@@ -70,7 +88,7 @@ def initialize_rag_system():
 
     rag_chain = (
         {
-            "context": mmr_multi_retriever | format_docs,
+            "context": final_retriever | format_docs,
             "question": RunnablePassthrough()}
         | prompt
         | llm_generation
