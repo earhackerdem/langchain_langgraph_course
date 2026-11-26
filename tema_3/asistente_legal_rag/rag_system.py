@@ -11,6 +11,14 @@ import streamlit as st
 from config import *
 from prompts import *
 
+def get_retriever_info():
+    return {
+        "tipo": SEARCH_TYPE.upper(),   # "MMR"
+        "k": SEARCH_K,
+        "fetch_k": MMR_FETCH_K,
+        "lambda_mult": MMR_DIVERSITY_LAMBDA,
+    }
+
 @st.cache_resource
 def initialize_rag_system():
 
@@ -77,7 +85,7 @@ def query_rag(question):
         #obtener respuesta
         response = rag_chain.invoke(question)
         #obtener documentos para mostrarlos 
-        docs = retriever._get_relevant_documents(question)
+        docs = retriever.invoke(question)
         #Formatear los documentos para mostrar
         docs_info = []
         for i, doc in enumerate(docs[:SEARCH_K],1):

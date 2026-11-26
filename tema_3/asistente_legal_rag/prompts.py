@@ -21,6 +21,7 @@ RESPUESTA:"""
 MULTI_QUERY_PROMPT = """Eres un experto en análisis de documentos legales especializados en contratos de arrendamiento.
 Tu tarea es generar múltiples versiones de la consulta del usuario para recuperar documentos relevantes desde una base de datos vectorial.
 
+
 Al generar variaciones de la consulta, considera:
 - Diferentes formas de referirse a personas (nombre completo, apellidos, solo nombre)
 - Sinónimos legales y términos técnicos de arrendamiento
